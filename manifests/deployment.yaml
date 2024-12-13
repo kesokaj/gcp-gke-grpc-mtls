@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server
+  template:
+    metadata:
+      name: grpc-server
+      labels:
+        app: grpc-server
+    spec:
+      containers:
+      - name: grpc-server
+        image: europe-west4-docker.pkg.dev/tl24-romantic-python/samples/grpc-server:latest
+        ports:
+        - name: grpc
+          containerPort: 50051
+        env:
+        - name: INSECURE
+          value: "false"
+        - name: PORT
+          value: "50051"
+        - name: CA_PEM
+          value: "/ca/ca.pem"
+        - name: SERVER_CRT
+          value: "/certs/tls.crt"
+        - name: SERVER_KEY
+          value: "/certs/tls.key"
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        volumeMounts:
+        - name: grpc-crt
+          mountPath: /certs
+          readOnly: true
+        - name: grpc-ca
+          mountPath: /ca
+          readOnly: true
+      - name: grpc-prober
+        image: europe-west4-docker.pkg.dev/tl24-romantic-python/samples/grpc-prober:latest
+        ports:
+        - name: http
+          containerPort: 8080
+      volumes:
+      - name: grpc-crt
+        secret:
+          secretName: grpc-crt
+      - name: grpc-ca
+        secret:
+          secretName: grpc-ca
+      restartPolicy: Always
